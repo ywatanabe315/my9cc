@@ -6,6 +6,14 @@
 #include <stdarg.h>
 #include "9cc.h"
 
+void error(char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  vfprintf(stderr, fmt, ap);
+  fprintf(stderr, "\n");
+  exit(1);
+}
+
 void error_at(char *loc, char *fmt, ...) {
 	va_list ap;
 	va_start(ap, fmt);
@@ -24,6 +32,14 @@ bool consume(char *op) {
 		return false;
 	token = token->next;
 	return true;
+}
+
+Token *consume_ident() {
+  if (token->kind != TK_IDENT)
+    return NULL;
+  Token *cur = token;
+  token = token->next;
+  return cur;
 }
 
 void expect(char *op) {
@@ -75,10 +91,28 @@ Token *tokenize() {
 			continue;
 		}
 
-		if (strchr("+-*/()<>", *p)) {
+		if (strchr("+-*/()<>;=", *p)) {
 			cur = new_token(TK_RESERVED, cur, p++, 1);
 			continue;
 		}
+
+    if ('a' <= *p && *p <= 'z') {
+      char ident[20];
+      memset(ident, '\0', sizeof(ident));
+      int len = 0;
+      for (;;) {
+        strncat(ident, p, 1);
+        len++;
+        p++;
+        if (!('a' <= *p && *p <= 'z')) {
+          char *copy_to = (char *)malloc(strlen(ident));
+          strcpy(copy_to, ident);
+          cur = new_token(TK_IDENT, cur, copy_to, len);
+          break;
+        }
+      }
+      continue;
+    }
 
 		if (isdigit(*p)) {
 			cur = new_token(TK_NUM, cur, p, 0);
@@ -110,6 +144,18 @@ Node *new_node_num(int val) {
 	return node;
 }
 
+LVar *locals;
+LVar *find_lvar(Token *tok) {
+  for (LVar *var = locals; var; var = var->next) {
+    if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
+      return var;
+  }
+  return NULL;
+}
+
+Node *stmt();
+Node *expr();
+Node *assign();
 Node *equality();
 Node *relational();
 Node *add();
@@ -117,8 +163,31 @@ Node *mul();
 Node *unary();
 Node *primary();
 
+Node *code[100];
+
+void program()  {
+  int i = 0;
+  while (!at_eof()) {
+    code[i++] = stmt();
+  }
+  code[i] = NULL;
+}
+
+Node *stmt() {
+  Node *node = expr();
+  expect(";");
+  return node;
+}
+
 Node *expr() {
-	Node *node = equality();
+	Node *node = assign();
+}
+
+Node *assign() {
+  Node *node = equality();
+  if (consume("="))
+    node = new_node(ND_ASSIGN, node, assign());
+  return node;
 }
 
 Node *equality() {
@@ -191,6 +260,29 @@ Node *primary() {
 		expect(")");
 		return node;
 	}
+
+  Token *tok = consume_ident();
+  if (tok) {
+    Node *node = calloc(1, sizeof(Node));
+    node->kind = ND_LVAR;
+    
+    LVar *lvar = find_lvar(tok);
+    if (lvar) {
+      node->offset = lvar->offset;
+    } else {
+      lvar = calloc(1, sizeof(LVar));
+      lvar->next = locals;
+      lvar->name = tok->str;
+      lvar->len = tok->len;
+      if (!locals)
+        lvar->offset = 8;
+      else
+        lvar->offset = locals->offset + 8;
+      node->offset = lvar->offset;
+      locals = lvar;
+    }
+    return node;
+  }
 
 	return new_node_num(expect_number());
 }
