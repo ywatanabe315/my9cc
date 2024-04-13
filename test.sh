@@ -44,4 +44,7 @@ assert 10 "a=10;a;"
 assert 3 "a=1;b=2;a+b;"
 assert 10 "abc=6;efg=4;abc+efg;"
 
+assert 2 "return 2;"
+assert 2 "return 2; return 4;"
+
 echo OK
