@@ -113,6 +113,18 @@ Token *tokenize() {
       continue;
     }
 
+    if (strncmp(p, "if", 2) == 0 && !is_alnum(p[2])) {
+      cur = new_token(TK_IF, cur, p, 2);
+      p += 2;
+      continue;
+    }
+
+    if (strncmp(p, "else", 4) == 0 && !is_alnum(p[4])) {
+      cur = new_token(TK_IF, cur, p, 4);
+      p += 4;
+      continue;
+    }
+
     if ('a' <= *p && *p <= 'z') {
       char ident[20];
       memset(ident, '\0', sizeof(ident));
@@ -197,6 +209,20 @@ Node *stmt() {
     node = calloc(1, sizeof(Node));
     node->kind = ND_RETURN;
     node->lhs = expr();
+  } else if (consume_keyword(TK_IF)) {
+    node = calloc(1, sizeof(Node));
+    node->kind = ND_IF;
+
+    if (!consume("("))
+      error_at(token->str, "'('ではないトークンです");
+
+    node->lhs = expr();
+
+    if (!consume(")"))
+      error_at(token->str, "')'ではないトークンです");
+
+    node->rhs = stmt();
+    return node;
   } else {
     node = expr();
   }

@@ -47,4 +47,7 @@ assert 10 "abc=6;efg=4;abc+efg;"
 assert 2 "return 2;"
 assert 2 "return 2; return 4;"
 
+assert 1 "if(1==1) 1;"
+assert 0 "if(1==0) 1;0;"
+
 echo OK
