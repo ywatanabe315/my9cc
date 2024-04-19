@@ -42,10 +42,22 @@ void gen(Node *node) {
       gen(node->lhs);
       printf("  pop rax\n");
       printf("  cmp rax, 0\n");
-      printf("  je %s\n", ".Lend1");
-      //　本体
-      gen(node->rhs);
+      if (node->rhs->kind == ND_ELSE) {
+        printf("  je %s\n", ".Lelse1");
+        //　ifブロック
+        gen(node->rhs->lhs);
+        printf("  jmp .Lend1\n");
+        printf("%s\n", ".Lelse1:");
+        // elseブロック
+        gen(node->rhs->rhs);
+      } else {
+        printf("  je %s\n", ".Lend1");
+        //　ifブロック
+        gen(node->rhs);
+      }
+
       printf("%s\n", ".Lend1:");
+      return;
   }
 
 	gen(node->lhs);

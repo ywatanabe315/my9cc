@@ -120,7 +120,7 @@ Token *tokenize() {
     }
 
     if (strncmp(p, "else", 4) == 0 && !is_alnum(p[4])) {
-      cur = new_token(TK_IF, cur, p, 4);
+      cur = new_token(TK_ELSE, cur, p, 4);
       p += 4;
       continue;
     }
@@ -221,7 +221,18 @@ Node *stmt() {
     if (!consume(")"))
       error_at(token->str, "')'ではないトークンです");
 
-    node->rhs = stmt();
+    Node *body = stmt();
+
+    // elseがあればノードのrhsはND_ELSEにする
+    if (consume_keyword(TK_ELSE)) {
+      Node *n_else = calloc(1, sizeof(Node));
+      n_else->kind = ND_ELSE;
+      n_else->lhs = body;
+      n_else->rhs = stmt();
+      node->rhs = n_else;
+    } else {
+      node->rhs = body;
+    }
     return node;
   } else {
     node = expr();
