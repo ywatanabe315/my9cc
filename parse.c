@@ -125,6 +125,12 @@ Token *tokenize() {
       continue;
     }
 
+    if (strncmp(p, "while", 5) == 0 && !is_alnum(p[5])) {
+      cur = new_token(TK_WHILE, cur, p, 5);
+      p += 5;
+      continue;
+    }
+
     if ('a' <= *p && *p <= 'z') {
       char ident[20];
       memset(ident, '\0', sizeof(ident));
@@ -233,6 +239,20 @@ Node *stmt() {
     } else {
       node->rhs = body;
     }
+    return node;
+  } else if (consume_keyword(TK_WHILE)) {
+    node = calloc(1, sizeof(Node));
+    node->kind = ND_WHILE;
+
+    if (!consume("("))
+      error_at(token->str, "'('ではないトークンです");
+
+    node->lhs = expr();
+
+    if (!consume(")"))
+      error_at(token->str, "')'ではないトークンです");
+
+    node->rhs = stmt();
     return node;
   } else {
     node = expr();
