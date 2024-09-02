@@ -54,5 +54,8 @@ assert 1 "if(1==1) 1; else 0;"
 assert 0 "if(1==0) 1; else 0;"
 
 assert 10 "a=0; while(a < 10) a=a+1; return a;"
+assert 0 "a=0; while(a > 10) a=a+1; return a;"
+
+assert 10 "for(a=0; a<10; a++) a; return a;"
 
 echo OK

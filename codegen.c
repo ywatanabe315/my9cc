@@ -68,6 +68,18 @@ void gen(Node *node) {
       printf("  jmp %s\n", ".Lbegin1");
       printf("%s\n", ".Lend1:");
       return;
+    case ND_FOR:
+      gen(node->lhs);
+      printf(".Lbegin1:\n");
+      gen(node->rhs);
+      printf("  pop rax\n");
+      printf("  cmp rax, 0\n");
+      printf("  je %s\n", ".Lend1");
+      gen(node->rhs->lhs);
+      gen(node->rhs->rhs);
+      printf("  jmp %s\n", ".Lbegin1");
+      printf("%s\n", ".Lend1:");
+      return;
   }
 
 	gen(node->lhs);
